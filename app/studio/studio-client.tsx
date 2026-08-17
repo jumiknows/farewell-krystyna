@@ -1,0 +1,17 @@
+"use client";
+import { FormEvent, useEffect, useState } from "react";
+
+type Message = { id: number; name: string; role: string; text: string; stamp: string };
+export default function StudioClient({ userName }: { userName: string }) {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [name, setName] = useState(userName);
+  const [role, setRole] = useState("teammate");
+  const [message, setMessage] = useState("");
+  const [stamp, setStamp] = useState("WITH LOVE");
+  const [status, setStatus] = useState("");
+  const load = () => fetch("/api/messages").then(r => r.json()).then(d => setMessages(d.messages || []));
+  useEffect(() => { load(); }, []);
+  async function submit(e: FormEvent) { e.preventDefault(); setStatus("Adding your postcard…"); const r = await fetch("/api/messages", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name, role, message, stamp }) }); const d = await r.json(); if (!r.ok) { setStatus(d.error || "Something went wrong."); return; } setMessage(""); setStatus("Your message is now on Krystyna’s board ♥"); await load(); }
+  async function remove(id: number) { if (!window.confirm("Remove this message from the farewell board?")) return; await fetch(`/api/messages?id=${id}`, { method: "DELETE" }); await load(); }
+  return <main className="studio-shell"><header className="studio-header"><div><p className="eyebrow">TEAMMATE STUDIO</p><h1>Build Krystyna’s<br/><em>Paris send-off.</em></h1><p>Add a thoughtful note below. It will appear instantly on her private farewell experience.</p></div><a className="preview-link" href="/" target="_blank">Preview her site ↗</a></header><section className="studio-grid"><form className="message-form" onSubmit={submit}><div className="form-title"><span>01</span><div><h2>Write your postcard</h2><p>Warm, personal, and from the heart.</p></div></div><label>Your name<input value={name} onChange={e => setName(e.target.value)} maxLength={60} required/></label><label>Your connection<input value={role} onChange={e => setRole(e.target.value)} maxLength={80} placeholder="teammate, coffee friend, mentor…"/></label><label>Your message<textarea value={message} onChange={e => setMessage(e.target.value)} maxLength={900} rows={7} required placeholder="A favourite memory, a thank-you, or a wish for France…"/><small>{message.length}/900</small></label><label>Postcard stamp<select value={stamp} onChange={e => setStamp(e.target.value)}><option>WITH LOVE</option><option>MERCI</option><option>BON VOYAGE</option><option>À BIENTÔT</option><option>PARIS AWAITS</option></select></label><button className="publish-button" type="submit">Add to her farewell board <span>→</span></button><p className="form-status" aria-live="polite">{status}</p></form><aside className="message-list"><div className="form-title"><span>02</span><div><h2>Messages so far</h2><p>{messages.length} postcard{messages.length === 1 ? "" : "s"} waiting for Krystyna</p></div></div>{messages.length === 0 ? <div className="empty-state"><b>Be the first to write!</b><p>Your postcard will appear here.</p></div> : messages.map(item => <article className="studio-note" key={item.id}><div><span>{item.stamp}</span><button onClick={() => remove(item.id)} aria-label={`Remove message from ${item.name}`}>×</button></div><p>“{item.text}”</p><footer><b>{item.name}</b><small>{item.role}</small></footer></article>)}</aside></section><footer className="studio-footer">Made together, with love · Ottawa → Paris</footer></main>;
+}
