@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "farewell-krystyna",
-  "main": "worker/index.ts",
+  "main": "dist/server/index.js",
   "compatibility_date": "2026-08-17",
   "compatibility_flags": ["nodejs_compat"],
   "assets": { "directory": "dist/client", "binding": "ASSETS" },
@@ -9,7 +9,7 @@
     {
       "binding": "DB",
       "database_name": "farewell-krystyna-messages",
-      "database_id": "07534f2b-11b8-4deb-83c8-4c6d4769cb6c",
+      "database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID",
       "migrations_dir": "drizzle"
     }
   ],

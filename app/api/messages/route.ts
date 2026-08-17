@@ -1,7 +1,6 @@
 import { desc, eq } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { farewellMessages } from "../../../db/schema";
-import { getChatGPTUser } from "../../chatgpt-auth";
 
 export async function GET() {
   try {
@@ -12,10 +11,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const user = await getChatGPTUser();
-  if (!user) return Response.json({ error: "Please sign in to add a message." }, { status: 401 });
   const body = await request.json() as { name?: string; role?: string; message?: string; stamp?: string };
-  const name = body.name?.trim().slice(0, 60) || user.displayName;
+  const name = body.name?.trim().slice(0, 60) || "A teammate";
   const role = body.role?.trim().slice(0, 80) || "teammate";
   const message = body.message?.trim().slice(0, 900) || "";
   const stamp = body.stamp?.trim().slice(0, 24) || "WITH LOVE";
@@ -26,8 +23,6 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const user = await getChatGPTUser();
-  if (!user) return Response.json({ error: "Please sign in." }, { status: 401 });
   const id = Number(new URL(request.url).searchParams.get("id"));
   if (!Number.isInteger(id)) return Response.json({ error: "Invalid message." }, { status: 400 });
   const db = await getDb();
