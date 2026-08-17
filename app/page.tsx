@@ -18,6 +18,7 @@ export default function Home() {
   const [volume, setVolume] = useState(0.28);
   const audioRef = useRef<{ context: AudioContext; gain: GainNode; timer: number } | null>(null);
   useEffect(() => { if (!finale) return; const timer = window.setTimeout(() => setFinale(false), 5200); return () => window.clearTimeout(timer); }, [finale]);
+  useEffect(() => { if (window.location.hash) window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`); }, []);
   useEffect(() => { fetch("/api/messages").then(r => r.ok ? r.json() : null).then(data => { if (data?.messages?.length) setNotes(data.messages); }).catch(() => null); }, []);
   useEffect(() => { if (audioRef.current) audioRef.current.gain.gain.setTargetAtTime(volume, audioRef.current.context.currentTime, .08); }, [volume]);
 
@@ -31,11 +32,12 @@ export default function Home() {
     playTone(); const timer = window.setInterval(playTone, 760); audioRef.current = { context, gain, timer }; setPlaying(true);
   }
   function stopMusic() { const audio = audioRef.current; if (audio) { window.clearInterval(audio.timer); audio.gain.gain.setTargetAtTime(0, audio.context.currentTime, .05); window.setTimeout(() => audio.context.close(), 180); } audioRef.current = null; setPlaying(false); }
+  function scrollToSection(id: string) { document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }); }
   useEffect(() => () => { if (audioRef.current) { window.clearInterval(audioRef.current.timer); audioRef.current.context.close(); } }, []);
   return (
     <main>
       <div className="paper-grain" />
-      <nav className="topbar"><a className="wordmark" href="#home">pour Krystyna <span>♥</span></a><div className="navlinks"><a href="#memories">Messages</a><a href="#paris">Paris awaits</a></div></nav>
+      <nav className="topbar"><a className="wordmark" href="/">pour Krystyna <span>♥</span></a><div className="navlinks"><button type="button" onClick={() => scrollToSection("memories")}>Messages</button><button type="button" onClick={() => scrollToSection("paris")}>Paris awaits</button></div></nav>
       <aside className="sound-control" aria-label="Music controls"><button onClick={playing ? stopMusic : startMusic} aria-label={playing ? "Mute music" : "Play music"}><span className={playing ? "sound-wave active" : "sound-wave"}>♪</span>{playing ? "Music on" : "Play music"}</button>{playing && <label><span className="sr-only">Music volume</span><input type="range" min="0" max="0.55" step="0.01" value={volume} onChange={e => setVolume(Number(e.target.value))}/></label>}</aside>
       <section className="hero" id="home">
         <div className="sun" />
