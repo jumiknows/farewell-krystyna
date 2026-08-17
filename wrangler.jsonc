@@ -9,7 +9,7 @@
     {
       "binding": "DB",
       "database_name": "farewell-krystyna-messages",
-      "database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID",
+      "database_id": "07534f2b-11b8-4deb-83c8-4c6d4769cb6c",
       "migrations_dir": "drizzle"
     }
   ],
