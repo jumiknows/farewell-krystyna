@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element -- Postcards preserve uploaded photos and animated GIFs exactly. */
 import Link from "next/link";
-import { useEffect, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useState } from "react";
 import { useFarewellSound } from "./use-farewell-sound";
 import { ParisMagic } from "./paris-magic";
 import type { PostcardMessage } from "./postcard-media";
@@ -62,7 +62,9 @@ export default function Home() {
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [selectedNoteIndex, notes.length, playPaper]);
-  function scrollToSection(id: string) { document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }); }
+  function scrollToSection(id: string) {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
+  }
   function beginReveal(withSound: boolean) {
     if (withSound) sound.start();
     setOpeningGift(true);
@@ -85,13 +87,6 @@ export default function Home() {
     setReaderTurn(value => value + 1);
     setSelectedNoteIndex(current => current === null ? 0 : (current + direction + notes.length) % notes.length);
   }
-  function tiltPostcard(event: ReactPointerEvent<HTMLElement>) {
-    if (event.pointerType !== "mouse") return;
-    const rect = event.currentTarget.getBoundingClientRect();
-    event.currentTarget.style.setProperty("--tilt-x", `${((event.clientY - rect.top) / rect.height - .5) * -5}deg`);
-    event.currentTarget.style.setProperty("--tilt-y", `${((event.clientX - rect.left) / rect.width - .5) * 6}deg`);
-  }
-  function resetPostcard(event: ReactPointerEvent<HTMLElement>) { event.currentTarget.style.setProperty("--tilt-x", "0deg"); event.currentTarget.style.setProperty("--tilt-y", "0deg"); }
   return (
     <main
       onPointerOverCapture={event => { if (event.pointerType === "mouse" && (event.target as HTMLElement).closest("button:not(:disabled)")) sound.playSelect(); }}
@@ -126,7 +121,7 @@ export default function Home() {
       {opened && <div className="letter-overlay" role="dialog" aria-modal="true" aria-labelledby="farewell-letter-title"><button className="close" autoFocus onClick={() => setOpened(false)} aria-label="Close farewell letter">×</button><article className="letter"><div className="letter-date">OTTAWA · 20 AUGUST 2026</div><h2 id="farewell-letter-title">Chère Krystyna,</h2><p>You brought a rare kind of light to our team—the kind that makes people feel welcome, makes hard days easier, and turns colleagues into friends.</p><p>We’re so excited for the life waiting for you in France. Go wander down tiny streets, find your favourite café, say yes to new adventures, and know that a whole group of people back here will always be cheering you on.</p><p className="letter-sign">Wishing you all the best,<br/><strong>Your team</strong></p><button className="letter-next" onClick={revealPostcards}>Read your postcards <span aria-hidden="true">→</span></button><div className="wax" aria-hidden="true">K</div></article></div>}
       <section className="messages" id="memories">
         <div className="section-heading"><p className="eyebrow">POSTCARDS FROM HOME · CHAPTER TWO</p><h2>A few things we hope<br/>you’ll take with you</h2><p>{loadingNotes ? "Gathering everyone’s words…" : noteLoadError ? "The post is taking the scenic route. Please try again shortly." : `${notes.length} note${notes.length === 1 ? "" : "s"} for the big adventure ahead.`}</p></div>
-        {loadingNotes ? <div className="recipient-loading" aria-label="Loading postcards"><i/><i/><i/></div> : noteLoadError ? <div className="recipient-empty"><span>◯</span><p>We couldn’t gather the postcards just yet.</p><button onClick={() => window.location.reload()}>Try again</button></div> : notes.length === 0 ? <div className="recipient-empty"><span>◯</span><p>The first postcard is still being written.</p></div> : <div className="cards">{notes.map((note, i) => <article className={`note note-${(i % 3) + 1}`} key={note.id ?? `${note.name}-${i}`} tabIndex={0} role="button" aria-label={`Open postcard ${i + 1} of ${notes.length} from ${note.name}`} onClick={() => openPostcard(i)} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openPostcard(i); } }} onPointerEnter={sound.playPaper} onPointerMove={tiltPostcard} onPointerLeave={resetPostcard}><div className="stamp">{note.stamp}</div><div className="postmark" aria-hidden="true">◯<br/><span>20.08.26</span></div><span className="quote" aria-hidden="true">“</span><p>{note.text}</p>{note.media?.length > 0 && <div className="postcard-media-grid recipient-media" aria-label="Postcard photos and GIFs">{note.media.map(item => <img key={item.src} src={item.src} alt={item.label} loading="lazy"/>)}</div>}{note.stickers?.length > 0 && <div className="postcard-sticker-row" aria-label="Postcard stickers">{note.stickers.map((sticker, index) => <span key={`${sticker.symbol}-${index}`} title={sticker.label}>{sticker.symbol}</span>)}</div>}<footer><div><b>{note.name}</b><small>{note.role}</small></div><span className="note-open-hint">Open postcard <i aria-hidden="true">↗</i></span></footer></article>)}</div>}
+        {loadingNotes ? <div className="recipient-loading" aria-label="Loading postcards"><i/><i/><i/></div> : noteLoadError ? <div className="recipient-empty"><span>◯</span><p>We couldn’t gather the postcards just yet.</p><button onClick={() => window.location.reload()}>Try again</button></div> : notes.length === 0 ? <div className="recipient-empty"><span>◯</span><p>The first postcard is still being written.</p></div> : <div className="cards">{notes.map((note, i) => <article className={`note note-${(i % 3) + 1}${note.media?.length ? " note-has-media" : ""}`} key={note.id ?? `${note.name}-${i}`} tabIndex={0} role="button" aria-label={`Open postcard ${i + 1} of ${notes.length} from ${note.name}`} onClick={() => openPostcard(i)} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openPostcard(i); } }} onPointerEnter={sound.playPaper}><div className="stamp">{note.stamp}</div><div className="postmark" aria-hidden="true">◯<br/><span>20.08.26</span></div><span className="quote" aria-hidden="true">“</span><p>{note.text}</p>{note.media?.length > 0 && <div className="postcard-media-grid recipient-media" aria-label="Postcard photos and GIFs">{note.media.map(item => <img key={item.src} src={item.src} alt={item.label} loading="lazy"/>)}</div>}{note.stickers?.length > 0 && <div className="postcard-sticker-row" aria-label="Postcard stickers">{note.stickers.map((sticker, index) => <span key={`${sticker.symbol}-${index}`} title={sticker.label}>{sticker.symbol}</span>)}</div>}<footer><div><b>{note.name}</b><small>{note.role}</small></div><span className="note-open-hint">Open postcard <i aria-hidden="true">↗</i></span></footer></article>)}</div>}
         {!loadingNotes && !noteLoadError && notes.length > 0 && <button className="chapter-next" onClick={() => { sound.playPaper(); scrollToSection("paris"); }}>One last stop: Paris <span aria-hidden="true">→</span></button>}
       </section>
       <section className="paris" id="paris"><div className="paris-inner"><p className="eyebrow">THE FINALE · YOUR NEXT CHAPTER</p><h2>Paris is waiting<br/>for you.</h2><p className="paris-copy">For the morning cafés. The golden evenings. The people you haven’t met yet. The stories you’ll tell us when we see you again.</p><div className="wish-row"><span>joy</span><i>·</i><span>courage</span><i>·</i><span>adventure</span><i>·</i><span>home</span></div><button className="final-button" data-sound="confirm" onClick={() => { sound.playConfirm(); setMagicBurst(value => value + 1); setFinale(true); }}>Send Krystyna your best wishes <span aria-hidden="true">→</span></button></div><div className="arc"/></section>
