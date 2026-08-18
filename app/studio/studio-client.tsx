@@ -21,6 +21,9 @@ type StatusTone = "neutral" | "success" | "error";
 type PersonalizationTool = "gif" | "emoji" | "sticker" | null;
 
 const DRAFT_KEY = "krystyna-farewell-postcard-draft";
+const MAX_ORIGINAL_IMAGE_BYTES = 20 * 1024 * 1024;
+const MAX_STORED_IMAGE_BYTES = 1_750_000;
+const MAX_PHOTO_DIMENSION = 1800;
 const STAMPS = [
   { label: "BEST WISHES", mark: "✓" },
   { label: "MERCI", mark: "M" },
@@ -28,6 +31,47 @@ const STAMPS = [
   { label: "À BIENTÔT", mark: "☾" },
   { label: "PARIS AWAITS", mark: "⌁" },
 ] as const;
+
+async function preparePostcardImage(file: File): Promise<File> {
+  if (file.type === "image/gif") {
+    if (file.size <= MAX_STORED_IMAGE_BYTES) return file;
+    throw new Error("That GIF is a little too large. Add it using a GIPHY or Tenor link instead.");
+  }
+
+  if (file.size <= MAX_STORED_IMAGE_BYTES) return file;
+
+  let picture: ImageBitmap;
+  try {
+    picture = await createImageBitmap(file);
+  } catch {
+    throw new Error("We couldn’t open that photo. Please choose another image.");
+  }
+
+  const scale = Math.min(1, MAX_PHOTO_DIMENSION / Math.max(picture.width, picture.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(picture.width * scale));
+  canvas.height = Math.max(1, Math.round(picture.height * scale));
+  const context = canvas.getContext("2d");
+  if (!context) {
+    picture.close();
+    throw new Error("We couldn’t prepare that photo. Please try another image.");
+  }
+
+  context.fillStyle = "#fffaf1";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.drawImage(picture, 0, 0, canvas.width, canvas.height);
+  picture.close();
+
+  for (const quality of [0.84, 0.72, 0.58, 0.44]) {
+    const optimized = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, "image/jpeg", quality));
+    if (optimized && optimized.size <= MAX_STORED_IMAGE_BYTES) {
+      const name = file.name.replace(/\.[^.]+$/, "") || "postcard-photo";
+      return new File([optimized], `${name}.jpg`, { type: "image/jpeg" });
+    }
+  }
+
+  throw new Error("That photo is too detailed for a postcard. Please choose a smaller image.");
+}
 const PROMPTS = [
   { label: "A favourite memory", mark: "☕", starter: "I’ll always remember the time " },
   { label: "A little thank-you", mark: "👏", starter: "Thank you for " },
@@ -154,16 +198,17 @@ export default function StudioClient() {
       setToolMessage("A postcard can hold two photos or GIFs.");
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setToolMessage("Choose an image or GIF smaller than 5 MB.");
+    if (file.size > MAX_ORIGINAL_IMAGE_BYTES) {
+      setToolMessage("Choose a photo smaller than 20 MB, or add an animated GIF by link.");
       return;
     }
 
     setUploading(true);
     setToolMessage("Adding your image to the postcard…");
     try {
+      const image = await preparePostcardImage(file);
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", image);
       const response = await fetch("/api/media", { method: "POST", body: formData });
       const result = await response.json() as { attachment?: PostcardAttachment; error?: string };
       if (!response.ok || !result.attachment) throw new Error(result.error || "That image couldn’t be added.");

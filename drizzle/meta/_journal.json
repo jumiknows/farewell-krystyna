@@ -15,6 +15,13 @@
       "when": 1787016876600,
       "tag": "0001_fair_piledriver",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1787019282405,
+      "tag": "0002_overconfident_rocket_racer",
+      "breakpoints": true
     }
   ]
 }

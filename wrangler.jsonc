@@ -5,12 +5,6 @@
   "compatibility_date": "2026-08-17",
   "compatibility_flags": ["nodejs_compat"],
   "assets": { "directory": "dist/client", "binding": "ASSETS" },
-  "r2_buckets": [
-    {
-      "binding": "BUCKET",
-      "bucket_name": "farewell-krystyna-media"
-    }
-  ],
   "d1_databases": [
     {
       "binding": "DB",
