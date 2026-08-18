@@ -2,116 +2,92 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-type AudioEngine = {
-  context: AudioContext;
-  master: GainNode;
-  ambienceTimer: number;
-};
+const SOUND_FILES = {
+  ambience: "/audio/paris-cafe-user-v8.mp3",
+  envelope: "/audio/envelope-open.mp3",
+  paper: "/audio/paper-rustle.mp3",
+  select: "/audio/mechanical-select-v8.mp3",
+  press: "/audio/mechanical-press-v8.mp3",
+} as const;
 
-export function useFarewellSound(initialVolume = 0.24) {
-  const engineRef = useRef<AudioEngine | null>(null);
+export function useFarewellSound(initialVolume = 0.28) {
+  const ambienceRef = useRef<HTMLAudioElement | null>(null);
+  const enabledRef = useRef(false);
+  const volumeRef = useRef(initialVolume);
   const lastPaperAt = useRef(0);
+  const lastSelectAt = useRef(0);
   const [enabled, setEnabled] = useState(false);
   const [volume, setVolumeState] = useState(initialVolume);
 
-  const makeTone = useCallback((frequency: number, duration: number, level: number, type: OscillatorType = "sine") => {
-    const engine = engineRef.current;
-    if (!engine) return;
-    const now = engine.context.currentTime;
-    const oscillator = engine.context.createOscillator();
-    const envelope = engine.context.createGain();
-    oscillator.type = type;
-    oscillator.frequency.setValueAtTime(frequency, now);
-    envelope.gain.setValueAtTime(0.0001, now);
-    envelope.gain.exponentialRampToValueAtTime(level, now + 0.012);
-    envelope.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-    oscillator.connect(envelope).connect(engine.master);
-    oscillator.start(now);
-    oscillator.stop(now + duration + 0.02);
+  const playEffect = useCallback((src: string, relativeVolume: number) => {
+    if (!enabledRef.current) return;
+    const effect = new Audio(src);
+    effect.preload = "auto";
+    effect.volume = Math.min(1, volumeRef.current * relativeVolume);
+    void effect.play().catch(() => undefined);
   }, []);
 
-  const playClick = useCallback(() => {
-    if (!enabled || !engineRef.current) return;
-    makeTone(520, 0.055, 0.035, "sine");
-    window.setTimeout(() => makeTone(720, 0.045, 0.018, "sine"), 28);
-  }, [enabled, makeTone]);
+  const playSelect = useCallback(() => {
+    const now = performance.now();
+    if (now - lastSelectAt.current < 110) return;
+    lastSelectAt.current = now;
+    playEffect(SOUND_FILES.select, 0.8);
+  }, [playEffect]);
+
+  const playPress = useCallback(() => playEffect(SOUND_FILES.press, 1.8), [playEffect]);
+  const playConfirm = useCallback(() => playEffect(SOUND_FILES.press, 2.05), [playEffect]);
 
   const playPaper = useCallback(() => {
-    const engine = engineRef.current;
-    const nowMs = performance.now();
-    if (!enabled || !engine || nowMs - lastPaperAt.current < 260) return;
-    lastPaperAt.current = nowMs;
-    const context = engine.context;
-    const duration = 0.13;
-    const buffer = context.createBuffer(1, Math.ceil(context.sampleRate * duration), context.sampleRate);
-    const channel = buffer.getChannelData(0);
-    for (let i = 0; i < channel.length; i += 1) channel[i] = (Math.random() * 2 - 1) * (1 - i / channel.length);
-    const source = context.createBufferSource();
-    const filter = context.createBiquadFilter();
-    const envelope = context.createGain();
-    filter.type = "bandpass";
-    filter.frequency.value = 1850;
-    filter.Q.value = 0.7;
-    envelope.gain.setValueAtTime(0.0001, context.currentTime);
-    envelope.gain.exponentialRampToValueAtTime(0.045, context.currentTime + 0.018);
-    envelope.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + duration);
-    source.connect(filter).connect(envelope).connect(engine.master);
-    source.start();
-  }, [enabled]);
+    const now = performance.now();
+    if (now - lastPaperAt.current < 320) return;
+    lastPaperAt.current = now;
+    playEffect(SOUND_FILES.paper, 0.72);
+  }, [playEffect]);
+
+  const playEnvelope = useCallback(() => playEffect(SOUND_FILES.envelope, 1.05), [playEffect]);
 
   const start = useCallback(() => {
-    if (engineRef.current) return;
-    const AudioCtx = window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    const context = new AudioCtx();
-    const master = context.createGain();
-    master.gain.value = volume;
-    master.connect(context.destination);
-    const frequencies = [261.63, 329.63, 392, 329.63, 293.66, 349.23, 440, 349.23, 261.63, 329.63, 392, 523.25];
-    let step = 0;
-    const ambience = () => {
-      const now = context.currentTime;
-      const oscillator = context.createOscillator();
-      const envelope = context.createGain();
-      oscillator.type = "sine";
-      oscillator.frequency.value = frequencies[step++ % frequencies.length];
-      envelope.gain.setValueAtTime(0.0001, now);
-      envelope.gain.exponentialRampToValueAtTime(0.085, now + 0.06);
-      envelope.gain.exponentialRampToValueAtTime(0.0001, now + 0.72);
-      oscillator.connect(envelope).connect(master);
-      oscillator.start(now);
-      oscillator.stop(now + 0.76);
-    };
-    ambience();
-    const ambienceTimer = window.setInterval(ambience, 760);
-    engineRef.current = { context, master, ambienceTimer };
+    if (ambienceRef.current) return;
+    enabledRef.current = true;
     setEnabled(true);
-    window.setTimeout(() => makeTone(660, 0.06, 0.025), 40);
-  }, [makeTone, volume]);
+    const mechanism = new Audio(SOUND_FILES.press);
+    mechanism.volume = Math.min(1, volumeRef.current * 1.8);
+    void mechanism.play().catch(() => undefined);
+    const ambience = new Audio(SOUND_FILES.ambience);
+    ambience.loop = true;
+    ambience.preload = "auto";
+    ambience.volume = volumeRef.current;
+    ambienceRef.current = ambience;
+    void ambience.play().catch(() => undefined);
+  }, []);
 
   const stop = useCallback(() => {
-    const engine = engineRef.current;
-    if (engine) {
-      window.clearInterval(engine.ambienceTimer);
-      engine.master.gain.setTargetAtTime(0, engine.context.currentTime, 0.04);
-      window.setTimeout(() => void engine.context.close(), 160);
-    }
-    engineRef.current = null;
+    enabledRef.current = false;
     setEnabled(false);
+    const ambience = ambienceRef.current;
+    if (ambience) {
+      ambience.pause();
+      ambience.currentTime = 0;
+    }
+    ambienceRef.current = null;
   }, []);
 
   const setVolume = useCallback((next: number) => {
+    volumeRef.current = next;
     setVolumeState(next);
-    const engine = engineRef.current;
-    if (engine) engine.master.gain.setTargetAtTime(next, engine.context.currentTime, 0.06);
+    if (ambienceRef.current) ambienceRef.current.volume = next;
   }, []);
 
-  useEffect(() => () => {
-    const engine = engineRef.current;
-    if (engine) {
-      window.clearInterval(engine.ambienceTimer);
-      void engine.context.close();
-    }
+  useEffect(() => {
+    Object.values(SOUND_FILES).forEach(src => {
+      const audio = new Audio(src);
+      audio.preload = "auto";
+    });
+    return () => {
+      ambienceRef.current?.pause();
+      ambienceRef.current = null;
+    };
   }, []);
 
-  return { enabled, volume, setVolume, start, stop, playClick, playPaper };
+  return { enabled, volume, setVolume, start, stop, playSelect, playPress, playConfirm, playPaper, playEnvelope };
 }

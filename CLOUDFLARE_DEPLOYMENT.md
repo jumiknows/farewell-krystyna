@@ -1,52 +1,34 @@
-# Cloudflare deployment guide
+# Cloudflare deployment
 
-## 1. Upload this project to GitHub
+This repository is designed for Cloudflare Workers Builds connected directly to GitHub.
 
-Extract the ZIP. In `jumiknows/farewell-krystyna`, choose **Add file → Upload files**, then drag the extracted contents into the repository and commit them to `main`.
+## Build configuration
 
-## 2. Create the D1 database
+Use these settings in **Workers & Pages → farewell-krystyna → Settings → Builds**:
 
-In Cloudflare, open **Workers & Pages → D1 SQL database → Create database** and use `farewell-krystyna-messages`.
+- Repository: `jumiknows/farewell-krystyna`
+- Production branch: `main`
+- Build command: `chmod +x scripts/*.sh && npm run build`
+- Deploy command: `npx wrangler d1 migrations apply farewell-krystyna-messages --remote && npx wrangler deploy`
+- Root directory: `/`
 
-Copy its database ID. In `wrangler.jsonc`, replace `REPLACE_WITH_YOUR_D1_DATABASE_ID` with the real ID and commit the change.
+The D1 binding and database ID are already declared in `wrangler.jsonc`.
 
-## 3. Create a narrowly scoped API token
+## First deployment
 
-Create a Cloudflare token with only the permissions required to deploy Workers and edit D1. Never paste the token into source files.
+1. Upload or merge the repository contents into `main`.
+2. Confirm the Cloudflare Git integration is connected.
+3. Start a deployment, or let the push trigger it automatically.
+4. Open `/studio` and add a temporary postcard.
+5. Open `/` and confirm the postcard appears.
+6. Delete the temporary postcard from `/studio`.
 
-## 4. Add GitHub Actions secrets
+## Access model
 
-Open the GitHub repository, then **Settings → Secrets and variables → Actions**. Add:
+The recipient page and teammate studio are intentionally public. There is no authentication layer. Anyone with the `/studio` URL can add, edit, or delete messages, so share that URL only with the intended team.
 
-- `CLOUDFLARE_API_TOKEN`
-- `CLOUDFLARE_ACCOUNT_ID`
+## Routine updates
 
-The included workflow installs dependencies, builds the app, applies the D1 migration and deploys whenever `main` changes.
+Every push to `main` triggers a new Cloudflare build. Database migrations are applied before the Worker is deployed.
 
-## 5. Protect the teammate studio
-
-In Cloudflare Zero Trust, create a self-hosted Access application for the deployed hostname. Protect these paths for approved teammate emails:
-
-- `/studio*`
-- `/api/messages*`
-
-The app reads Cloudflare Access's authenticated email header server-side. Keep `/` outside the teammate-only policy unless you want it sign-in gated.
-
-## 6. Separate Krystyna from editors
-
-For strict recipient-only access, use two Access applications:
-
-- `/studio*` and `/api/messages*`: allow only editor emails.
-- `/`: allow only Krystyna's email.
-
-If the farewell should open without sign-in, leave `/` public and share the link only with Krystyna.
-
-## 7. Verify
-
-1. Open `/` and test the music, letter, scrolling and finale.
-2. Sign in as an approved teammate at `/studio`.
-3. Add a test postcard.
-4. Refresh `/` and confirm it appears.
-5. Delete the test postcard.
-
-Never commit API tokens, credentials or teammate email lists.
+Never commit Cloudflare tokens, credentials, or private teammate information.

@@ -1,31 +1,40 @@
 # Farewell Krystyna
 
-An animated Paris-themed farewell experience with two connected surfaces:
+A cinematic Paris-themed farewell keepsake built for Krystyna and her team.
 
-- `/` — Krystyna's polished farewell experience
-- `/studio` — the teammate postcard studio
+## Experiences
 
-Messages are stored in Cloudflare D1. The studio supports Cloudflare Access, so approved teammates can sign in with their email while the recipient page remains presentation-focused.
+- `/` — the recipient experience: envelope reveal, farewell letter, cinematic postcard reader, café soundtrack, dimensional Paris animation, and finale
+- `/studio` — the public teammate studio for previewing, adding, editing, and managing postcard messages
 
-## Included
+Messages are stored in Cloudflare D1 and appear dynamically on the recipient page.
 
-- Responsive Paris-inspired design
-- User-controlled ambient music, mute and volume controls
-- Interactive farewell letter and finale
-- Durable teammate messages stored in D1
-- GitHub Actions deployment workflow
-- Cloudflare Access-compatible editor identity
-- No committed credentials
+## Technology
 
-## Deploy
+- React and Next.js App Router through Vinext
+- Cloudflare Workers and D1
+- Three.js for the dimensional flight, Eiffel Tower, and finale
+- Drizzle ORM for the message schema
+- Responsive, keyboard-accessible UI with reduced-motion support
 
-Follow [CLOUDFLARE_DEPLOYMENT.md](CLOUDFLARE_DEPLOYMENT.md). Initial setup requires a Cloudflare account, a D1 database, two GitHub repository secrets and a Cloudflare Access policy.
+## Local development
 
-## Local validation
+Requirements: Node.js 22 or newer.
 
 ```bash
 npm ci
-npm run build
+npm run dev
 ```
 
-Node.js 22 or newer is required.
+Production validation:
+
+```bash
+npm run build
+npm run typecheck
+```
+
+## Deployment
+
+See [CLOUDFLARE_DEPLOYMENT.md](CLOUDFLARE_DEPLOYMENT.md).
+
+No credentials, teammate lists, build output, or platform-specific project metadata are committed.
