@@ -12,16 +12,33 @@ Use these settings in **Workers & Pages → farewell-krystyna → Settings → B
 - Deploy command: `npx wrangler d1 migrations apply farewell-krystyna-messages --remote && npx wrangler deploy`
 - Root directory: `/`
 
-The D1 binding and database ID are already declared in `wrangler.jsonc`.
+The D1 database and R2 media bucket bindings are already declared in `wrangler.jsonc`.
+
+## One-time photo and GIF storage setup
+
+Before deploying this version for the first time, create the R2 bucket named `farewell-krystyna-media`:
+
+1. In Cloudflare, open **R2 object storage**.
+2. If prompted, enable R2 for the account.
+3. Choose **Create bucket** and enter `farewell-krystyna-media`.
+
+Alternatively, if Wrangler is authenticated locally:
+
+```bash
+npx wrangler r2 bucket create farewell-krystyna-media
+```
+
+No bucket keys or R2 credentials belong in the repository. The Worker accesses its bucket through the existing `BUCKET` binding.
 
 ## First deployment
 
-1. Upload or merge the repository contents into `main`.
-2. Confirm the Cloudflare Git integration is connected.
-3. Start a deployment, or let the push trigger it automatically.
-4. Open `/studio` and add a temporary postcard.
-5. Open `/` and confirm the postcard appears.
-6. Delete the temporary postcard from `/studio`.
+1. Create the `farewell-krystyna-media` R2 bucket once.
+2. Upload or merge the repository contents into `main`.
+3. Confirm the Cloudflare Git integration is connected.
+4. Start a deployment, or let the push trigger it automatically.
+5. Open `/studio` and add a temporary postcard with a photo, GIF, emoji, or sticker.
+6. Open `/` and confirm the postcard and its extras appear.
+7. Delete the temporary postcard from `/studio`.
 
 ## Access model
 

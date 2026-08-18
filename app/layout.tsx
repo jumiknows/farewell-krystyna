@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://farewell-krystyna.jumiknows.workers.dev"),
-  title: "Au revoir, Krystyna — With love from your team",
+  title: "Au revoir, Krystyna — A farewell from your team",
   description: "A collection of notes, memories, and warm wishes for Krystyna’s next chapter in France.",
   applicationName: "Pour Krystyna",
   authors: [{ name: "Krystyna’s team" }],
@@ -20,14 +20,14 @@ export const metadata: Metadata = {
     locale: "en_CA",
     url: "/",
     siteName: "Pour Krystyna",
-    title: "Au revoir, Krystyna ♥",
-    description: "A Parisian farewell, made with love by your team.",
+    title: "Au revoir, Krystyna",
+    description: "A Parisian farewell from your teammates.",
     images: [{ url: "/farewell-share.png", width: 1200, height: 630, alt: "Au revoir, Krystyna — Ottawa to Paris" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Au revoir, Krystyna ♥",
-    description: "A Parisian farewell, made with love by your team.",
+    title: "Au revoir, Krystyna",
+    description: "A Parisian farewell from your teammates.",
     images: ["/farewell-share.png"],
   },
   robots: { index: false, follow: false },

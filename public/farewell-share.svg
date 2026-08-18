@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#f7efe2"/>
+  <circle cx="960" cy="165" r="122" fill="#e8c47f" opacity=".8"/>
+  <path d="M760 630 861 126h32l101 504h-74l-18-122h-50l-18 122Zm106-185h22l-11-93Z" fill="#263746"/>
+  <path d="M735 630h285M806 428h142M830 283h94" fill="none" stroke="#263746" stroke-width="22" stroke-linecap="round"/>
+  <path d="M0 530c170-48 306-28 454 20s293 46 433 7 215-30 313-3v76H0Z" fill="#a63e42"/>
+  <text x="88" y="105" fill="#a63e42" font-family="Georgia,serif" font-size="24" letter-spacing="8">UNE LETTRE DE NOUS TOUS</text>
+  <text x="82" y="260" fill="#263746" font-family="Georgia,serif" font-size="108">Au revoir,</text>
+  <text x="86" y="376" fill="#a63e42" font-family="cursive" font-style="italic" font-size="126">Krystyna!</text>
+  <text x="91" y="450" fill="#56636c" font-family="Arial,sans-serif" font-size="25">Ottawa → Paris · best wishes from your team</text>
+</svg>
