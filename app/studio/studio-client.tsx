@@ -3,6 +3,7 @@
 /* eslint-disable @next/next/no-img-element -- Postcard photos and animated GIFs remain unoptimized keepsakes. */
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { PostcardMediaGallery } from "../postcard-media-gallery";
 import {
   MAX_POSTCARD_MEDIA,
   MAX_POSTCARD_STICKERS,
@@ -18,7 +19,7 @@ import { useFarewellSound } from "../use-farewell-sound";
 
 type Message = PostcardMessage & { id: number };
 type StatusTone = "neutral" | "success" | "error";
-type PersonalizationTool = "gif" | "emoji" | "sticker" | null;
+type PersonalizationTool = "photo" | "gif" | "emoji" | "sticker" | null;
 
 const DRAFT_KEY = "krystyna-farewell-postcard-draft";
 const MAX_ORIGINAL_IMAGE_BYTES = 20 * 1024 * 1024;
@@ -89,6 +90,7 @@ export default function StudioClient() {
   const [activeTool, setActiveTool] = useState<PersonalizationTool>(null);
   const [gifUrl, setGifUrl] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [draggingPhoto, setDraggingPhoto] = useState(false);
   const [toolMessage, setToolMessage] = useState("");
   const [status, setStatus] = useState("");
   const [statusTone, setStatusTone] = useState<StatusTone>("neutral");
@@ -202,9 +204,13 @@ export default function StudioClient() {
       setToolMessage("Choose a photo smaller than 20 MB, or add an animated GIF by link.");
       return;
     }
+    if (!/^image\/(?:jpeg|png|webp|gif|avif)$/.test(file.type)) {
+      setToolMessage("Choose a JPG, PNG, WebP, AVIF, or animated GIF.");
+      return;
+    }
 
     setUploading(true);
-    setToolMessage("Adding your image to the postcard…");
+    setToolMessage(file.size > MAX_STORED_IMAGE_BYTES ? "Gently preparing your photo…" : "Placing your photo on the postcard…");
     try {
       const image = await preparePostcardImage(file);
       const formData = new FormData();
@@ -213,12 +219,40 @@ export default function StudioClient() {
       const result = await response.json() as { attachment?: PostcardAttachment; error?: string };
       if (!response.ok || !result.attachment) throw new Error(result.error || "That image couldn’t be added.");
       setMedia(current => current.length < MAX_POSTCARD_MEDIA ? [...current, result.attachment!] : current);
-      setToolMessage("Image added. It will travel with your postcard.");
+      setToolMessage(file.type === "image/gif" ? "Your GIF is ready for her postcard." : "Your photo is ready for her postcard.");
     } catch (error) {
       setToolMessage(error instanceof Error ? error.message : "That image couldn’t be added. Please try again.");
     } finally {
       setUploading(false);
     }
+  }
+
+  async function addPostcardFiles(files: FileList | File[]) {
+    const remaining = MAX_POSTCARD_MEDIA - media.length;
+    if (remaining < 1) {
+      setToolMessage("Your postcard already has its two finishing photographs.");
+      return;
+    }
+
+    const images = Array.from(files).filter(file => file.type.startsWith("image/"));
+    if (!images.length) {
+      setToolMessage("Choose a photo or animated GIF to add to your postcard.");
+      return;
+    }
+
+    for (const file of images.slice(0, remaining)) await uploadPostcardMedia(file);
+    if (images.length > remaining) setToolMessage("Two images fit beautifully on a postcard. The others weren’t added.");
+  }
+
+  function choosePhoto() {
+    if (uploading || media.length >= MAX_POSTCARD_MEDIA) return;
+    setToolMessage("");
+    fileInputRef.current?.click();
+  }
+
+  function removePhoto(item: PostcardAttachment) {
+    setMedia(current => current.filter(attachment => attachment.src !== item.src));
+    setToolMessage(item.kind === "gif" ? "GIF removed from your postcard." : "Photo removed from your postcard.");
   }
 
   function addGif() {
@@ -384,7 +418,7 @@ export default function StudioClient() {
         <form className={editingId === null ? "message-form atelier-composer" : "message-form atelier-composer is-editing"} id="postcard-composer" onSubmit={submit}>
           <div className="form-title"><span>01</span><div><h2>{editingId === null ? "A note, just for her" : "A little finishing touch"}</h2><p>{editingId === null ? "There’s no perfect thing to say. Just your thing." : "You’re polishing a postcard already on the wall."}</p></div></div>
 
-          <div className="studio-live-preview atelier-postcard" aria-label="Live postcard preview"><div className="studio-preview-top"><span>CARTE POSTALE · OTTAWA → PARIS</span><i>{stamp}</i></div><div className="studio-preview-mark" aria-hidden="true">◯ <small>20 · 08 · 26</small></div><span className="preview-quote" aria-hidden="true">“</span><p>{message || "A tiny corner of the world, waiting for your words…"}</p>{media.length > 0 && <div className="postcard-media-grid preview-media" aria-label="Selected postcard photos and GIFs">{media.map(item => <img key={item.src} src={item.src} alt={item.label}/>)}</div>}{stickers.length > 0 && <div className="postcard-sticker-row preview-stickers" aria-label="Selected postcard stickers">{stickers.map(item => <span key={item.symbol} title={item.label}>{item.symbol}</span>)}</div>}<footer><div><b>{name || "Your name"}</b><small>{role || "a teammate or colleague"}</small></div><span className="preview-seal" aria-hidden="true">K</span></footer></div>
+          <div className="studio-live-preview atelier-postcard" aria-label="Live postcard preview"><div className="studio-preview-top"><span>CARTE POSTALE · OTTAWA → PARIS</span><i>{stamp}</i></div><div className="studio-preview-mark" aria-hidden="true">◯ <small>20 · 08 · 26</small></div><span className="preview-quote" aria-hidden="true">“</span><p>{message || "A tiny corner of the world, waiting for your words…"}</p>{media.length > 0 && <PostcardMediaGallery items={media} variant="preview" label="Selected postcard photos and GIFs"/>}{stickers.length > 0 && <div className="postcard-sticker-row preview-stickers" aria-label="Selected postcard stickers">{stickers.map(item => <span key={item.symbol} title={item.label}>{item.symbol}</span>)}</div>}<footer><div><b>{name || "Your name"}</b><small>{role || "a teammate or colleague"}</small></div><span className="preview-seal" aria-hidden="true">K</span></footer></div>
 
           {draftRestored && editingId === null && <div className="draft-note">Your unfinished postcard was saved. <button type="button" onClick={() => { resetForm(); setStatus(""); }}>Start fresh</button></div>}
 
@@ -396,19 +430,39 @@ export default function StudioClient() {
 
           <section className="postcard-personalize" aria-label="Personalize your postcard">
             <div className="personalize-heading"><div><span>Add a personal touch</span><small>Photos, GIFs, emoji, and stickers.</small></div><span className="personalize-limit">{media.length}/{MAX_POSTCARD_MEDIA} images</span></div>
-            <input ref={fileInputRef} className="sr-only" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" tabIndex={-1} onChange={event => { const file = event.currentTarget.files?.[0]; event.currentTarget.value = ""; if (file) void uploadPostcardMedia(file); }}/>
+            <input ref={fileInputRef} className="postcard-file-input" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" multiple aria-hidden="true" tabIndex={-1} onChange={event => { const files = Array.from(event.currentTarget.files || []); event.currentTarget.value = ""; if (files.length) void addPostcardFiles(files); }}/>
             <div className="personalize-toolbar" aria-label="Postcard customization tools">
-              <button className="personalize-tool" type="button" disabled={uploading || media.length >= MAX_POSTCARD_MEDIA} onClick={() => { setActiveTool(null); setToolMessage(""); fileInputRef.current?.click(); }}><span aria-hidden="true">▧</span><span>Photo</span></button>
+              <button className={activeTool === "photo" ? "personalize-tool is-selected" : "personalize-tool"} type="button" aria-expanded={activeTool === "photo"} disabled={uploading} onClick={() => { setActiveTool(current => current === "photo" ? null : "photo"); setToolMessage(""); }}><span aria-hidden="true">▧</span><span>Photo</span></button>
               <button className={activeTool === "gif" ? "personalize-tool is-selected" : "personalize-tool"} type="button" aria-expanded={activeTool === "gif"} disabled={media.length >= MAX_POSTCARD_MEDIA} onClick={() => { setActiveTool(current => current === "gif" ? null : "gif"); setToolMessage(""); }}><span aria-hidden="true">▷</span><span>GIF</span></button>
               <button className={activeTool === "emoji" ? "personalize-tool is-selected" : "personalize-tool"} type="button" aria-expanded={activeTool === "emoji"} onClick={() => { setActiveTool(current => current === "emoji" ? null : "emoji"); setToolMessage(""); }}><span aria-hidden="true">☺</span><span>Emoji</span></button>
               <button className={activeTool === "sticker" ? "personalize-tool is-selected" : "personalize-tool"} type="button" aria-expanded={activeTool === "sticker"} onClick={() => { setActiveTool(current => current === "sticker" ? null : "sticker"); setToolMessage(""); }}><span aria-hidden="true">◌</span><span>Sticker</span></button>
             </div>
 
+            {activeTool === "photo" && <div
+              className={`photo-dropzone${draggingPhoto ? " is-dragging" : ""}${uploading ? " is-uploading" : ""}${media.length >= MAX_POSTCARD_MEDIA ? " is-complete" : ""}`}
+              role="button"
+              tabIndex={media.length >= MAX_POSTCARD_MEDIA ? -1 : 0}
+              aria-disabled={uploading || media.length >= MAX_POSTCARD_MEDIA}
+              aria-busy={uploading}
+              onClick={choosePhoto}
+              onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); choosePhoto(); } }}
+              onDragEnter={event => { event.preventDefault(); if (!uploading && media.length < MAX_POSTCARD_MEDIA) setDraggingPhoto(true); }}
+              onDragOver={event => event.preventDefault()}
+              onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDraggingPhoto(false); }}
+              onDrop={event => { event.preventDefault(); setDraggingPhoto(false); if (!uploading) void addPostcardFiles(event.dataTransfer.files); }}
+              onPaste={event => { if (event.clipboardData.files.length && !uploading) { event.preventDefault(); void addPostcardFiles(event.clipboardData.files); } }}
+            >
+              <span className="photo-dropzone-icon" aria-hidden="true"><i/></span>
+              <strong>{uploading ? "Preparing your photograph…" : media.length >= MAX_POSTCARD_MEDIA ? "Your photographs are ready" : draggingPhoto ? "Leave it right here" : "Add a photograph"}</strong>
+              <span>{media.length >= MAX_POSTCARD_MEDIA ? "Remove one below to choose another." : "Drop, paste, or choose one from your device."}</span>
+              {media.length < MAX_POSTCARD_MEDIA && <small>JPG, PNG, WEBP OR GIF · UP TO 20 MB</small>}
+            </div>}
             {activeTool === "gif" && <div className="personalize-panel gif-panel"><label htmlFor="postcard-gif-url">Paste a GIPHY or Tenor link</label><div><input id="postcard-gif-url" type="url" value={gifUrl} onChange={event => setGifUrl(event.target.value)} placeholder="https://giphy.com/gifs/…" onKeyDown={event => { if (event.key === "Enter") { event.preventDefault(); addGif(); } }}/><button type="button" onClick={addGif}>Add GIF</button></div><a href="https://giphy.com/search/paris" target="_blank" rel="noreferrer">Find a Paris GIF on GIPHY ↗</a></div>}
             {activeTool === "emoji" && <div className="personalize-panel emoji-panel" aria-label="Choose an emoji">{POSTCARD_EMOJIS.map(emoji => <button key={emoji} type="button" aria-label={`Add ${emoji} to your message`} onClick={() => addEmoji(emoji)}>{emoji}</button>)}</div>}
             {activeTool === "sticker" && <div className="personalize-panel sticker-panel" aria-label="Choose a postcard sticker">{POSTCARD_STICKERS.map(sticker => <button className={stickers.some(item => item.symbol === sticker.symbol) ? "is-selected" : ""} key={sticker.symbol} type="button" aria-pressed={stickers.some(item => item.symbol === sticker.symbol)} onClick={() => toggleSticker(sticker)}><span aria-hidden="true">{sticker.symbol}</span><small>{sticker.label}</small></button>)}</div>}
 
-            {(media.length > 0 || stickers.length > 0) && <div className="selected-extras" aria-label="Selected postcard extras">{media.map(item => <button className="selected-extra media-extra" key={item.src} type="button" onClick={() => setMedia(current => current.filter(attachment => attachment.src !== item.src))}><img src={item.src} alt=""/><span>{item.kind === "gif" ? "GIF" : "Photo"}</span><i aria-hidden="true">×</i><span className="sr-only">Remove {item.label}</span></button>)}{stickers.map(item => <button className="selected-extra sticker-extra" key={item.symbol} type="button" onClick={() => toggleSticker(item)}><span aria-hidden="true">{item.symbol}</span><i aria-hidden="true">×</i><span className="sr-only">Remove {item.label}</span></button>)}</div>}
+            {media.length > 0 && <div className="photo-collection" aria-label="Photographs selected for your postcard"><div className="photo-collection-heading"><span>On your postcard</span><small>{media.length === 1 ? "One moment to remember" : "Two moments to remember"}</small></div><div className="photo-collection-grid">{media.map(item => <article className="photo-selection" key={item.src}><div className="photo-selection-image"><img src={item.src} alt={item.label}/></div><div className="photo-selection-caption"><span>{item.kind === "gif" ? "Animated GIF" : "Photograph"}</span><button type="button" onClick={() => removePhoto(item)} aria-label={`Remove ${item.label}`}>×</button></div></article>)}</div></div>}
+            {stickers.length > 0 && <div className="selected-extras" aria-label="Selected postcard stickers">{stickers.map(item => <button className="selected-extra sticker-extra" key={item.symbol} type="button" onClick={() => toggleSticker(item)}><span aria-hidden="true">{item.symbol}</span><i aria-hidden="true">×</i><span className="sr-only">Remove {item.label}</span></button>)}</div>}
             {toolMessage && <p className="personalize-message" role="status">{toolMessage}</p>}
           </section>
 
@@ -422,7 +476,7 @@ export default function StudioClient() {
           <div className="form-title"><span>02</span><div><h2>Messages from the team</h2><p>{loading ? "Gathering everyone’s words…" : `${messages.length} postcard${messages.length === 1 ? "" : "s"}, each one entirely hers`}</p></div></div>
           <div className="wall-moment"><span>FOR KRYSTYNA · FROM THE TEAM</span><strong>{loading ? "··" : String(messages.length).padStart(2, "0")}</strong><small>{messages.length === 1 ? "thoughtful note" : "thoughtful notes"} on their way to Paris</small>{contributorNames.length > 0 && <div className="contributor-stack" aria-label={`${contributorNames.length} contributors`}>{contributorNames.slice(0, 5).map(contributor => <span key={contributor} title={contributor}>{contributor.charAt(0).toUpperCase()}</span>)}{contributorNames.length > 5 && <span>+{contributorNames.length - 5}</span>}</div>}</div>
           <p className="wall-help">Postcards appear on Krystyna’s farewell immediately.</p>
-          {loading ? <div className="postcard-loading" aria-label="Loading postcards"><i/><i/><i/></div> : messages.length === 0 ? <div className="empty-state atelier-empty"><div className="empty-envelope" aria-hidden="true"><i>K</i></div><b>The first page is yours.</b><p>Someone always has to begin the beautiful part.</p></div> : <div className="wall-postcards">{messages.map((item, index) => <article className={editingId === item.id ? "studio-note is-active" : "studio-note"} key={item.id} onPointerEnter={sound.playPaper}><div className="studio-note-top"><span>{item.stamp}</span><small>NO. {String(index + 1).padStart(2, "0")}</small></div><p>“{item.text}”</p>{item.media?.length > 0 && <div className="postcard-media-grid wall-media" aria-label="Postcard photos and GIFs">{item.media.map(attachment => <img key={attachment.src} src={attachment.src} alt={attachment.label} loading="lazy"/>)}</div>}{item.stickers?.length > 0 && <div className="postcard-sticker-row wall-stickers" aria-label="Postcard stickers">{item.stickers.map((sticker, stickerIndex) => <span key={`${sticker.symbol}-${stickerIndex}`} title={sticker.label}>{sticker.symbol}</span>)}</div>}<footer><div><b>{item.name}</b><small>{item.role}</small></div><div className="studio-note-actions"><button type="button" onClick={() => beginEdit(item)}>Refine</button><button className="remove-note" type="button" onClick={() => setDeleteCandidate(item.id)}>Remove</button></div></footer>{deleteCandidate === item.id && <div className="delete-confirm" role="alert"><p>Remove {item.name}’s postcard?</p><div><button type="button" onClick={() => setDeleteCandidate(null)}>Keep it</button><button className="confirm-remove" type="button" disabled={busy} onClick={() => void remove(item.id)}>Yes, remove</button></div></div>}</article>)}</div>}
+          {loading ? <div className="postcard-loading" aria-label="Loading postcards"><i/><i/><i/></div> : messages.length === 0 ? <div className="empty-state atelier-empty"><div className="empty-envelope" aria-hidden="true"><i>K</i></div><b>The first page is yours.</b><p>Someone always has to begin the beautiful part.</p></div> : <div className="wall-postcards">{messages.map((item, index) => <article className={editingId === item.id ? "studio-note is-active" : "studio-note"} key={item.id} onPointerEnter={sound.playPaper}><div className="studio-note-top"><span>{item.stamp}</span><small>NO. {String(index + 1).padStart(2, "0")}</small></div><p>“{item.text}”</p>{item.media?.length > 0 && <PostcardMediaGallery items={item.media} variant="wall" label="Postcard photos and GIFs" lazy/>}{item.stickers?.length > 0 && <div className="postcard-sticker-row wall-stickers" aria-label="Postcard stickers">{item.stickers.map((sticker, stickerIndex) => <span key={`${sticker.symbol}-${stickerIndex}`} title={sticker.label}>{sticker.symbol}</span>)}</div>}<footer><div><b>{item.name}</b><small>{item.role}</small></div><div className="studio-note-actions"><button type="button" onClick={() => beginEdit(item)}>Refine</button><button className="remove-note" type="button" onClick={() => setDeleteCandidate(item.id)}>Remove</button></div></footer>{deleteCandidate === item.id && <div className="delete-confirm" role="alert"><p>Remove {item.name}’s postcard?</p><div><button type="button" onClick={() => setDeleteCandidate(null)}>Keep it</button><button className="confirm-remove" type="button" disabled={busy} onClick={() => void remove(item.id)}>Yes, remove</button></div></div>}</article>)}</div>}
           <button className="wall-invite" type="button" onClick={() => void copyStudioLink()}><span>{copied ? "The studio link has been copied." : "Invite another teammate"}</span><i aria-hidden="true">↗</i></button>
         </aside>
       </section>

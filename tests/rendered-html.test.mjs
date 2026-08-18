@@ -40,26 +40,37 @@ test("renders the colleague-friendly farewell and collaborative postcard studio"
   assert.match(studioHtml, />GIF</i);
   assert.match(studioHtml, />Emoji</i);
   assert.match(studioHtml, />Sticker</i);
+  assert.match(studioHtml, /postcard-file-input/i);
+  assert.match(studioHtml, /aria-hidden="true"[^>]*type="file"|type="file"[^>]*aria-hidden="true"/i);
   assert.match(studioHtml, /Add to Krystyna’s farewell/i);
   assert.match(studioHtml, /BEST WISHES/i);
   assert.doesNotMatch(studioHtml, /\bwith love\b|love letters|priority love|♥|✦|✧|No account needed|A surprise from the whole team|Find your words|Seal your postcard|Make her smile|qa-postcards|mobile-review/i);
 });
 
 test("keeps responsive postcard chapters crisp, aligned, and uncropped", async () => {
-  const [stylesheet, homepage] = await Promise.all([
+  const [stylesheet, homepage, studio, gallery] = await Promise.all([
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/studio/studio-client.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/postcard-media-gallery.tsx", import.meta.url), "utf8"),
   ]);
 
   assert.match(stylesheet, /\.reveal-gate\{overflow:clip\}/);
   assert.match(stylesheet, /\.paper-grain\{opacity:\.045\}/);
   assert.match(stylesheet, /\.note,\.note-1,\.note-2,\.note-3\{[^}]*transform:none;[^}]*will-change:auto;/s);
-  assert.match(stylesheet, /\.recipient-media>img\{[^}]*object-fit:contain;/s);
-  assert.match(stylesheet, /\.focused-media>img\{object-fit:contain;/);
+  assert.match(stylesheet, /\.postcard-file-input\{display:none!important\}/);
+  assert.match(stylesheet, /\.postcard-photo>img\{[^}]*width:auto;[^}]*height:auto;[^}]*aspect-ratio:auto;[^}]*object-fit:contain;/s);
+  assert.match(stylesheet, /\.recipient-media \.postcard-photo>img\{/);
+  assert.match(stylesheet, /\.focused-media \.postcard-photo>img\{/);
   assert.match(stylesheet, /@media\(min-width:851px\) and \(max-height:800px\)/);
   assert.match(stylesheet, /@media\(max-height:690px\) and \(max-width:760px\)\{\s*\.paris\{/);
   assert.match(homepage, /scrollIntoView\(\{ behavior: "smooth", block: "start", inline: "nearest" \}\)/);
   assert.doesNotMatch(homepage, /onPointerMove=\{tiltPostcard\}/);
+  assert.match(studio, /className="postcard-file-input"/);
+  assert.match(studio, /className=\{`photo-dropzone/);
+  assert.match(studio, /onDrop=\{/);
+  assert.match(studio, /onPaste=\{/);
+  assert.match(gallery, /<figure className=/);
 });
 
 test("stores and serves postcard photos using D1 without an R2 bucket", async () => {
