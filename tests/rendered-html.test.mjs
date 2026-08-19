@@ -66,6 +66,7 @@ test("keeps responsive postcard chapters crisp, aligned, and uncropped", async (
   assert.match(stylesheet, /\.postcard-gallery \.note\{[^}]*max-height:418px;[^}]*overflow:hidden;/s);
   assert.match(stylesheet, /\.postcard-excerpt\{[^}]*overflow:hidden;[^}]*-webkit-line-clamp:6;/s);
   assert.match(stylesheet, /\.note-has-media>\.postcard-excerpt\{-webkit-line-clamp:2\}/);
+  assert.match(stylesheet, /\.postcard-gallery \.note footer b\{[^}]*margin:-5px 0 -3px -9px;[^}]*padding:5px 0 3px 9px;/s);
   assert.match(stylesheet, /\.focused-postcard-long \.focused-postcard-body>p\{/);
   assert.match(stylesheet, /@media\(min-width:851px\) and \(max-height:800px\)/);
   assert.match(stylesheet, /@media\(max-height:690px\) and \(max-width:760px\)\{\s*\.paris\{/);

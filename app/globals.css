@@ -487,7 +487,15 @@ body{-webkit-font-smoothing:auto;-moz-osx-font-smoothing:auto;font-kerning:norma
 .postcard-gallery .recipient-media .postcard-photo>img{max-height:clamp(80px,10.5svh,104px)}
 .postcard-gallery .postcard-sticker-row{padding:4px 0}
 .postcard-gallery .note footer{display:grid;min-height:0;grid-template-columns:minmax(0,1fr) auto;align-items:end;column-gap:9px}
-.postcard-gallery .note footer b{overflow:hidden;font-size:clamp(20px,1.8vw,24px);line-height:1.1;text-overflow:ellipsis;white-space:nowrap}
+.postcard-gallery .note footer b{
+  overflow:hidden;
+  margin:-5px 0 -3px -9px;
+  padding:5px 0 3px 9px;
+  font-size:clamp(20px,1.8vw,24px);
+  line-height:1.1;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
 .postcard-gallery .note footer small{overflow:hidden;font-size:8px;text-overflow:ellipsis;white-space:nowrap}
 .postcard-gallery .note-open-hint{gap:5px;font-size:7px;letter-spacing:.07em}
 .note-is-excerpt>.note-open-hint,.note-is-excerpt .note-open-hint{color:var(--red);border-color:#c8897e;opacity:1}
