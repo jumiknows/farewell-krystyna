@@ -21,6 +21,8 @@ type MessageBody = {
   stickers?: unknown;
 };
 
+const POSTCARD_LOCKED = true;
+
 function sanitizeMedia(value: unknown): PostcardAttachment[] {
   if (!Array.isArray(value)) return [];
   return value
@@ -80,6 +82,12 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+    if (POSTCARD_LOCKED) {
+    return Response.json(
+      { error: "The farewell postcard is now closed 💛" },
+      { status: 403 }
+    );
+  }
   const body = await request.json() as MessageBody;
   const name = body.name?.trim().slice(0, 60) || "A teammate";
   const role = body.role?.trim().slice(0, 80) || "teammate";
@@ -101,6 +109,12 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+    if (POSTCARD_LOCKED) {
+    return Response.json(
+      { error: "The farewell postcard is now closed 💛" },
+      { status: 403 }
+    );
+  }
   const body = await request.json() as MessageBody;
   const id = Number(body.id);
   const name = body.name?.trim().slice(0, 60) || "A teammate";
@@ -125,6 +139,12 @@ export async function PATCH(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+    if (POSTCARD_LOCKED) {
+    return Response.json(
+      { error: "The farewell postcard is now closed 💛" },
+      { status: 403 }
+    );
+  }
   const id = Number(new URL(request.url).searchParams.get("id"));
   if (!Number.isInteger(id)) return Response.json({ error: "Invalid message." }, { status: 400 });
   const db = await getDb();
