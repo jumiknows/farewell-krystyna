@@ -62,9 +62,18 @@ test("keeps responsive postcard chapters crisp, aligned, and uncropped", async (
   assert.match(stylesheet, /\.postcard-photo>img\{[^}]*width:auto;[^}]*height:auto;[^}]*aspect-ratio:auto;[^}]*object-fit:contain;/s);
   assert.match(stylesheet, /\.recipient-media \.postcard-photo>img\{/);
   assert.match(stylesheet, /\.focused-media \.postcard-photo>img\{/);
+  assert.match(stylesheet, /\.postcard-gallery>\.cards\{[^}]*grid-auto-flow:column;[^}]*overflow-x:auto;[^}]*scroll-snap-type:x mandatory;/s);
+  assert.match(stylesheet, /\.postcard-gallery \.note\{[^}]*max-height:418px;[^}]*overflow:hidden;/s);
+  assert.match(stylesheet, /\.postcard-excerpt\{[^}]*overflow:hidden;[^}]*-webkit-line-clamp:6;/s);
+  assert.match(stylesheet, /\.note-has-media>\.postcard-excerpt\{-webkit-line-clamp:2\}/);
+  assert.match(stylesheet, /\.focused-postcard-long \.focused-postcard-body>p\{/);
   assert.match(stylesheet, /@media\(min-width:851px\) and \(max-height:800px\)/);
   assert.match(stylesheet, /@media\(max-height:690px\) and \(max-width:760px\)\{\s*\.paris\{/);
   assert.match(homepage, /scrollIntoView\(\{ behavior: "smooth", block: "start", inline: "nearest" \}\)/);
+  assert.match(homepage, /className="postcard-gallery"/);
+  assert.match(homepage, /aria-label="Browse team postcards"/);
+  assert.match(homepage, /Read the full note/);
+  assert.match(homepage, /aria-label=\{`Complete message from \$\{notes\[selectedNoteIndex\]\.name\}`\}/);
   assert.doesNotMatch(homepage, /onPointerMove=\{tiltPostcard\}/);
   assert.match(studio, /className="postcard-file-input"/);
   assert.match(studio, /className=\{`photo-dropzone/);
