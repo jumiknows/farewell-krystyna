@@ -1,0 +1,22 @@
+name: PR Policy
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  title:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Validate PR title
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if [[ ! "$TITLE" =~ ^(feat|fix|docs|test|refactor|content|chore|ci|perf|build|revert)(\(.+\))?:\ .+ ]]; then
+            echo "Use a clear title such as fix: preserve postcard image after edit"
+            exit 1
+          fi
